@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:tap_mvi/core/di/injection.dart';
+import '../../domain/enitites/company_detail_entity.dart';
 import '../cubit/company_detail_cubit.dart';
 import '../cubit/company_detail_state.dart';
 
@@ -16,6 +18,34 @@ class CompanyDetailScreen extends StatefulWidget {
 class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
   bool showRevenue = true;
   int selectedPageIndex = 0;
+
+  List<BarChartGroupData> _buildBarChartData(List<ChartData> data) {
+    return data.asMap().entries.map((entry) {
+      return BarChartGroupData(
+        x: entry.key,
+        barRods: [
+          BarChartRodData(
+            toY: entry.value.value.toDouble(),
+            color: Colors.blue,
+          ),
+        ],
+      );
+    }).toList();
+  }
+
+  List<String> _buildMonthLabels(List<ChartData> data) {
+    return data.map((e) => e.month).toList();
+  }
+
+  String formatIndianCurrency(double value) {
+    if (value >= 10000000) {
+      return '₹${(value / 10000000).toStringAsFixed(1)} Cr';
+    } else if (value >= 100000) {
+      return '₹${(value / 100000).toStringAsFixed(1)} L';
+    } else {
+      return '₹${value.toStringAsFixed(0)}';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +64,14 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (msg) => Center(child: Text("Error: $msg")),
               loaded: (entity) {
+                final revenueMap = entity.revenue;
+                final ebitdaMap = entity.ebitda;
+                final labels = _buildMonthLabels(
+                  showRevenue ? revenueMap : ebitdaMap,
+                );
+
                 return SingleChildScrollView(
-                  padding:const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -49,7 +85,6 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      // Company Name
                       Text(
                         entity.companyName,
                         style: Theme.of(context).textTheme.titleLarge,
@@ -57,10 +92,9 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                       const SizedBox(height: 8),
                       Text(
                         entity.description,
-                        style: TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                       const SizedBox(height: 16),
-
                       Row(
                         children: [
                           Container(
@@ -97,10 +131,7 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 24),
-
-                      // Page Tabs
                       Row(
                         children: [
                           Expanded(
@@ -158,46 +189,171 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
                       IndexedStack(
                         index: selectedPageIndex,
                         children: [
-                          // ISIN Analysis Page
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Financials with toggle
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(8)
+                                  color: Colors.white,
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Column(
                                   children: [
                                     Row(
                                       mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          "Company Financials (${showRevenue ? 'Revenue' : 'EBITDA'})",
+                                          "COMPANY FINANCIALS",
                                           style: Theme.of(
                                             context,
-                                          ).textTheme.titleMedium,
+                                          ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
                                         ),
-                                        Switch(
-                                          value: showRevenue,
-                                          onChanged: (val) =>
-                                              setState(() => showRevenue = val),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () => setState(
+                                                  () => showRevenue = false,
+                                                ),
+                                                child: Container(
+                                                  color: !showRevenue
+                                                      ? Colors.white
+                                                      : Colors.grey.shade100,
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                        ),
+                                                    child: Text(
+                                                      "EBITDA",
+                                                      style:showRevenue ? Theme.of(
+                                                        context,
+                                                      ).textTheme.bodySmall?.copyWith(color: Colors.grey) : Theme.of(
+                                                        context,
+                                                      ).textTheme.bodySmall?.copyWith(color: Colors.black) ,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              GestureDetector(
+                                                onTap: () => setState(
+                                                  () => showRevenue = true,
+                                                ),
+                                                child: Container(
+                                                  color: showRevenue
+                                                      ? Colors.white
+                                                      : Colors.grey.shade100,
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                        ),
+                                                    child: Text(
+                                                      "Revenue",
+                                                      style: !showRevenue ? Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color: Colors.grey,
+                                                          ) : Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                        color: Colors.black,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 16),
                                     SizedBox(
-                                      height: 200,
-                                      child:
-                                      Placeholder(), // Replace with chart widget using chartData
+                                      height: 220,
+                                      child: BarChart(
+                                        BarChartData(
+                                          alignment:
+                                              BarChartAlignment.spaceAround,
+                                          barTouchData: BarTouchData(
+                                            enabled: true,
+                                          ),
+                                          titlesData: FlTitlesData(
+                                            leftTitles: AxisTitles(
+                                              sideTitles: SideTitles(
+                                                showTitles: true,
+                                                reservedSize: 56,
+                                                getTitlesWidget: (value, meta) {
+                                                  return Text(
+                                                    formatIndianCurrency(value),
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            rightTitles: AxisTitles(
+                                              sideTitles: SideTitles(
+                                                showTitles: false,
+                                              ),
+                                            ),
+                                            topTitles: AxisTitles(
+                                              sideTitles: SideTitles(
+                                                showTitles: false,
+                                              ),
+                                            ),
+                                            bottomTitles: AxisTitles(
+                                              sideTitles: SideTitles(
+                                                showTitles: true,
+                                                getTitlesWidget: (value, meta) {
+                                                  int index = value.toInt();
+                                                  if (index >= 0 &&
+                                                      index < labels.length) {
+                                                    return Text(
+                                                      labels[index].substring(
+                                                        0,
+                                                        1,
+                                                      ),
+                                                      style: const TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    );
+                                                  }
+                                                  return const Text('');
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                          borderData: FlBorderData(show: false),
+                                          gridData: FlGridData(show: false),
+                                          barGroups: _buildBarChartData(
+                                            showRevenue
+                                                ? revenueMap
+                                                : ebitdaMap,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -206,18 +362,27 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(8)
+                                  color: Colors.white,
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Row(
                                       children: [
-                                        Icon(Icons.perm_contact_cal_outlined, size: 18),
+                                        Icon(
+                                          Icons.perm_contact_cal_outlined,
+                                          size: 18,
+                                        ),
                                         SizedBox(width: 8),
-                                        Text("Issuer Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text(
+                                          "Issuer Details",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                     Divider(),
@@ -255,14 +420,12 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                               ),
                             ],
                           ),
-
-                          // Pros & Cons Page
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8)
+                              color: Colors.white,
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +438,7 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                                   ),
                                 ),
                                 ...entity.pros.map(
-                                      (e) => ListTile(
+                                  (e) => ListTile(
                                     leading: Icon(
                                       Icons.check_circle,
                                       color: Colors.green.shade200,
@@ -292,7 +455,7 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                                   ),
                                 ),
                                 ...entity.cons.map(
-                                      (e) => ListTile(
+                                  (e) => ListTile(
                                     leading: Icon(
                                       Icons.error,
                                       color: Colors.red.shade200,
@@ -330,7 +493,7 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
             ),
           ),
           Text(value, style: const TextStyle(color: Colors.black)),
-          const SizedBox(height: 4)
+          const SizedBox(height: 4),
         ],
       ),
     );
