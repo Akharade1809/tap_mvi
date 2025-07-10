@@ -19,14 +19,16 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
   bool showRevenue = true;
   int selectedPageIndex = 0;
 
-  List<BarChartGroupData> _buildBarChartData(List<ChartData> data) {
+  List<BarChartGroupData> _buildBarChartData(List<ChartData> data, Color color) {
     return data.asMap().entries.map((entry) {
       return BarChartGroupData(
         x: entry.key,
         barRods: [
           BarChartRodData(
             toY: entry.value.value.toDouble(),
-            color: Colors.blue,
+            color: color,
+            width: 14,
+            borderRadius: BorderRadius.circular(2)
           ),
         ],
       );
@@ -45,6 +47,15 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
     } else {
       return '₹${value.toStringAsFixed(0)}';
     }
+  }
+
+  double _getMaxValue(List<ChartData> a, List<ChartData> b){
+    final aMax = a.map((e) => e.value).reduce((a,b) => a > b ? a : b);
+    final bMax = b.map((e) => e.value).reduce((a,b) => a > b ? a : b);
+
+    final max = aMax > bMax ? aMax : bMax;
+
+    return max * 1.2;
   }
 
   @override
@@ -70,18 +81,26 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                   showRevenue ? revenueMap : ebitdaMap,
                 );
 
+                final maxY = _getMaxValue(revenueMap, ebitdaMap);
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          entity.logo,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade200,width: 1.0),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            entity.logo,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -291,6 +310,7 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                                       height: 220,
                                       child: BarChart(
                                         BarChartData(
+                                          maxY: maxY,
                                           alignment:
                                               BarChartAlignment.spaceAround,
                                           barTouchData: BarTouchData(
@@ -347,11 +367,7 @@ class _CompanyDetailScreenState extends State<CompanyDetailScreen> {
                                           ),
                                           borderData: FlBorderData(show: false),
                                           gridData: FlGridData(show: false),
-                                          barGroups: _buildBarChartData(
-                                            showRevenue
-                                                ? revenueMap
-                                                : ebitdaMap,
-                                          ),
+                                          barGroups: showRevenue ? _buildBarChartData(revenueMap, Colors.blue) : _buildBarChartData(ebitdaMap, Colors.indigo.shade900)
                                         ),
                                       ),
                                     ),
