@@ -1,6 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../domain/enitites/company_detail_entity.dart';
-
 part 'company_detail_dto.freezed.dart';
 part 'company_detail_dto.g.dart';
 
