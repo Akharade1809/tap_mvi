@@ -4,13 +4,12 @@ class AppTheme{
   static final ThemeData light = ThemeData(
     brightness: Brightness.light,
     primarySwatch: Colors.indigo,
-    fontFamily: 'Poppins',
-    // Define other light theme specifics
+
+    // fontFamily: 'Poppins',
   );
 
   static final ThemeData dark = ThemeData(
     brightness: Brightness.dark,
-    fontFamily: 'Poppins',
-    // Define dark theme specifics
+    // fontFamily: 'Poppins',
   );
 }
